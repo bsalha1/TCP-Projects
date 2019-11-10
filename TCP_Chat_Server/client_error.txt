@@ -1,0 +1,3 @@
+[OK] TCP Client initialized on 127.0.0.1:80
+[OK] Socket 3 created
+[OK] Socket 3 connected to 127.0.0.1:80

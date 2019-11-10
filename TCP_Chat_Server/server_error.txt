@@ -1,0 +1,15 @@
+[OK] TCP Server initialized on 127.0.0.1:80
+[OK] Socket 3 created
+[OK] Bound socket 3 to server
+[OK] Server socket 3 is listening...
+[OK] Accepted connection from client socket 12 on socket 3
+[OK] Adding new socket 12 to list.
+Client-12: hello
+[OK] Accepted connection from client socket 13 on socket 3
+[OK] Adding new socket 13 to list.
+Client-13: whats up guys
+Client-12: nothing much, u bro?
+Client-13: absolutely nothing m8
+[OK] Client disconnected on socket 13
+[OK] Socket 13 closed
+Segmentation fault

@@ -4,15 +4,11 @@
 #include <list>
 #include <iterator>
 #include <mutex>
-#include <condition_variable>
 #include <exception>
 
 #include <signal.h>
 
 #include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/sendfile.h>
 
 #include <unistd.h>
 #include <netinet/in.h>
@@ -24,12 +20,11 @@ void getServerDataThread();
 void getInputThread();
 void exitHandler(int signal);
 
-int isRunning = true;
+int isRunning;
 int localSocket;
-bool ready{};
-list<thread *> threads;
-FILE * outputFile;
 TCPClient * tcpClient;
+thread * getInput;
+thread * getServerData;
 mutex mut;
 mutex stdoutMut;
 
@@ -44,6 +39,7 @@ int main(int argc, char ** argv)
 
     char * address;
     char * port;
+    char * quitMsg = "CLIENT_CONFIRM_QUIT";
     char filename[64];
     char message[max_message];
     sockaddr_in server;
@@ -65,14 +61,25 @@ int main(int argc, char ** argv)
         fprintf(stdout, "%s", e.what());
     }
 
-    thread * getInput = new thread(getInputThread);
-    thread * getServerData = new thread(getServerDataThread);
-    threads.push_front(getInput);
-    threads.push_front(getServerData);
+    isRunning = true;
+    getInput = new thread(getInputThread);
+    getServerData = new thread(getServerDataThread);
 
-    exitHandler(0);
-    
-    return EXIT_SUCCESS;
+    // Continue when server closes
+    getServerData->join();
+    tcpClient->sendData(quitMsg, strlen(quitMsg), localSocket);
+    mut.lock();
+    tcpClient->closeSocket(localSocket);
+    mut.unlock();
+
+    stdoutMut.lock();
+    fprintf(stdout, "Server closed, press enter to exit.\n");
+    stdoutMut.unlock();
+
+    isRunning = false;
+    getInput->join();
+
+    exit(EXIT_SUCCESS);
 }
 
 
@@ -86,12 +93,11 @@ void getInputThread()
     fprintf(stderr, "[OK] Input thread initialized\n");
     #endif
     char message[max_message];
-    while(errno != EINTR)
+    while(true)
     {
         read(STDIN_FILENO, message, sizeof(message)); // Thread pauses until input is read
         message[strcspn(message, "\n")] = 0; // Cut off \n
-        printf("Read\n");
-        if(strcmp(message, "/quit") == 0)
+        if((strcmp(message, "/quit") == 0) || !isRunning)
         {
             break;
         }
@@ -136,15 +142,8 @@ void getServerDataThread()
             break;
         }
         
-        if(strcmp(buffer, "Server is closing\n") == 0) // If server sends closing message
+        if(strcmp(buffer, "SERVER_CLOSE\n") == 0) // If server sends closing message
         {
-            mut.lock();
-            tcpClient->closeSocket(localSocket);
-            mut.unlock();
-
-            stdoutMut.lock();
-            fprintf(stdout, "Server closed, press enter to exit.\n");
-            stdoutMut.unlock();
             break;
         }
         fprintf(stdout, "%s\n", buffer);
@@ -156,8 +155,5 @@ void getServerDataThread()
 
 void exitHandler(int signal)
 {
-    char * message = "t";
-    write(STDIN_FILENO, message, sizeof(message));
-    threads.front()->join();
-    threads.back()->join();
+    exit(EXIT_SUCCESS);
 }

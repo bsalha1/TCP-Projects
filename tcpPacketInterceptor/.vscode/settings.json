@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "udp.h": "c",
-        "string.h": "c"
-    }
-}

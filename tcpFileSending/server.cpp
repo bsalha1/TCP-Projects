@@ -60,7 +60,7 @@ int main(int argc, char **argv)
     file = open(filename, O_RDONLY);
     if (file == -1)
     {
-        fprintf(stderr, "[FAIL] Error opening file %s: %s\n", filename, strerror(errno));
+        perror("File failed to open for writing");
         exit(EXIT_FAILURE);
     }
 
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
         sentBytes = sendfile(clientSocket, file, &offset, BUFFER_SIZE);
         if(sentBytes == -1)
         {
-            fprintf(stdout, "[FAIL] Failed to send data to client: %s\n", strerror(errno));
+            perror("Send fail");
             exit(EXIT_FAILURE);
         }
         totalSentBytes += sentBytes;

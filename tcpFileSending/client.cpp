@@ -26,8 +26,7 @@ int main(int argc, char **argv)
     char * filename = "clientFile.iso";
     TCPClient tcpClient = TCPClient(address, port);
     int clientSocket;
-    ssize_t sizeRead = 0;
-    ssize_t totalSizeRead = 0;
+    ssize_t sizeRead = 0, totalSizeRead = 0;
     time_t start, end;
     char buffer[BUFFER_SIZE];
     int file;
@@ -52,7 +51,7 @@ int main(int argc, char **argv)
     file = open(filename, O_WRONLY);
     if(file == -1)
     {
-        fprintf(stderr, "[FAIL] Error opening file %s: %s\n", filename, strerror(errno));
+        perror("File failed to open for writing");
         exit(EXIT_FAILURE);
     }
 
@@ -62,10 +61,12 @@ int main(int argc, char **argv)
         sizeRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
         if(sizeRead == -1)
         {
+            perror("Read fail");
             exit(EXIT_FAILURE);
         }
         if(write(file, buffer, sizeof(buffer)) == -1)
         {
+            perror("Write fail");
             exit(EXIT_FAILURE);
         }
 

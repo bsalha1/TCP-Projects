@@ -16,24 +16,30 @@
 
 int main(int argc, char **argv)
 {
-    if(argc != 3)
+    if(argc != 4)
     {
-        fprintf(stderr, "[FAIL] Must enter 2 arguments; address and port\n");
+        fprintf(stderr, "[FAIL] Must enter 2 arguments; address, port and download path\n");
         exit(EXIT_FAILURE);
     }
     char * address = argv[1];
     int port = atoi(argv[2]);
-    char * filename = "clientFile.iso";
+    char * filename = argv[3];
     TCPClient tcpClient = TCPClient(address, port);
     int clientSocket;
     ssize_t sizeRead = 0, totalSizeRead = 0;
-    time_t start, end;
+    clock_t start, end;
     char buffer[BUFFER_SIZE];
     int file;
 
-    /*
-        Connect client socket to server
-    */
+
+
+    /* Create file */
+    FILE * fptr = fopen(filename, "w");
+    fclose(fptr);
+
+
+
+    /* Connect client socket to server */
     try
     {   
         clientSocket = tcpClient.makeSocket();
@@ -45,9 +51,9 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     
-    /*
-        Open file for writing
-    */
+
+
+    /* Open file for writing */
     file = open(filename, O_WRONLY);
     if(file == -1)
     {
@@ -55,29 +61,31 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    time(&start);
+
+
+    /* Receive server packets and write to file */
+    start = clock();
     do
     {
-        sizeRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
+        sizeRead = recv(clientSocket, buffer, BUFFER_SIZE, 0); // Receive from server
         if(sizeRead == -1)
         {
-            perror("Read fail");
+            perror("Receive fail");
             exit(EXIT_FAILURE);
         }
-        if(write(file, buffer, sizeof(buffer)) == -1)
+        if(write(file, buffer, sizeRead) == -1) // Write to file
         {
             perror("Write fail");
             exit(EXIT_FAILURE);
         }
 
         totalSizeRead += sizeRead;
-        fprintf(stdout, "Downloaded: %ld bytes", totalSizeRead);
-        fprintf(stdout, "\r");
+        fprintf(stdout, "Downloaded: %ld bytes\r", totalSizeRead);
     } while(sizeRead != 0);
-    time(&end);
+    end = clock();
 
-    fprintf(stdout, "\nDownload time: %.2lf\n", (double) (end - start));
     close(file);
+    fprintf(stdout, "\nDownload time: %lf\n", (double) (end - start) / CLOCKS_PER_SEC);
 
     return 0;
 }

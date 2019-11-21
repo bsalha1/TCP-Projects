@@ -23,6 +23,8 @@ class TCPServer
 {
 protected:
     struct sockaddr_in server;
+    char * ip_address;
+    short port;
     map <int, sockaddr_in> serverSockets;
     map <int, sockaddr_in> clientSockets;
 
@@ -31,13 +33,16 @@ public:
         CONSTRUCTORS
     */
 
-    // Constructor: initializes a server of which the server will be connected to
+    /**
+     * @param address Address of server to initialize
+     * @param port Port of server to host on
+     */
     TCPServer(char * address, short port);
 
-    // Empty constructor
+    /// Empty constructor; does nothing
     TCPServer(){}
-
-    // Deconstructor: closes all sockets
+    
+    /// Closes all sockets
     ~TCPServer();
 
 
@@ -45,16 +50,35 @@ public:
         NON-STATIC METHODS
     */
 
-    // Make socket on the server, returns file descriptor of socket. Socket of value -1 failed to be created
+    /**
+     * Makes a socket on this server's port 
+     * @throw socketInitException
+     * @return File descriptor of socket
+     */
     int makeSocket();
 
-    // Register a socket for server use. -1 for errors, 0 for success
+    /**
+     * Register a socket for server use
+     * @throw bindException
+     * @param socket 
+     */
     void bindSocket(int socket);
 
-    // Accepts client connection on specified server socket, returns the client socket file descriptor. -1 for errors
-    int acceptClient(int socket, sockaddr * clientAddr, socklen_t * socketLength);
+    /**
+     * Establishes connection with client socket
+     * @throw acceptException
+     * @param socket Socket to accept connection from
+     * @param client_addr Address structure of client (returned by reference)
+     * @param socket_length Length of socket address (returned by reference)
+     * @return The file descriptor for the client socket
+     */
+    int acceptClient(int socket, sockaddr * client_addr, socklen_t * socket_length);
 
-    // Close specified socket and remove it from the list it's in 
+    /**
+     * Closes a socket for reading and writing
+     * @throw closeException
+     * @param socket Socket to close
+     */
     void closeSocket(int socket);
     
 
@@ -63,14 +87,33 @@ public:
         STATIC METHODS
     */
 
-    // Listen for requests on a socket - will prevent further requests once n requests are being processed.
+    /**
+     * Set socket to listen for n requests
+     * @throw listenException
+     * @param socket Socket to listen
+     * @param n Number of requests allowed simultaneously
+     */
     static void listenOnSocket(int socket, int n);
 
-    // Sends a buffer of specified size to a client socket. Returns number of bytes sent or -1 for error
-    static ssize_t sendData(void * buffer, int size, int clientSocket);
+    /**
+     * Sends a given buffer of given size to a client socket
+     * @throw sendException
+     * @param buffer Data to send
+     * @param size Size of buffer (bytes)
+     * @param client_socket Client socket to send data to
+     * @return Number of bytes sent
+     */
+    static ssize_t sendData(void * buffer, size_t size, int client_socket);
 
-    // Receive buffer from specified socket. Returns number of bytes received or -1 for error
-    static ssize_t receiveData(void * data, size_t size, int clientSocket);
+    /**
+     * Receive buffer being transmitted from client socket
+     * @throw receiveException
+     * @param buffer Pointer to store the data in
+     * @param size Size of buffer (bytes)
+     * @param client_socket Client socket who is transmitting the data
+     * @return Number of bytes received
+     */
+    static ssize_t receiveData(void * buffer, size_t size, int client_socket);
 
 
 
@@ -87,7 +130,7 @@ public:
         SETTERS
     */
 
-    // Set the inet address for the server
+    /// Set the inet address for the server
     void setServer(char * address, short port) noexcept;
 
 
@@ -96,16 +139,16 @@ public:
         GETTERS
     */
 
-    // Get map of server sockets
+    /// Get map of server sockets
     map<int, sockaddr_in> getServerSockets() noexcept;
 
-    // Get map of client sockets
+    /// Get map of client sockets
     map<int, sockaddr_in> getClientSockets() noexcept;
 
-    // Get the inet server structure
+    /// Get the inet server structure
     sockaddr_in getServer() noexcept;
 
-    // Get the number of sockets active on the server
+    /// Get the number of sockets active on the server
     size_t getNumSockets() noexcept;
 };
 
@@ -119,12 +162,15 @@ TCPServer::~TCPServer()
 
 TCPServer::TCPServer(char * address, short port)
 {
+    this->ip_address = address;
+    this->port = port;
+
     memset(&server, 0, sizeof(server));
     server.sin_family = AF_INET;
     server.sin_port = htons(port);
     inet_pton(AF_INET, address, &server.sin_addr.s_addr);
-    #ifdef ERR_MSG
-    fprintf(stderr, "[OK] TCP Server initialized on %s:%d\n", address, port);
+    #ifdef INFO_MSG
+    fprintf(stderr, "[INFO] TCP Server initialized on %s:%d\n", this->ip_address, this->port);
     #endif
 }
 
@@ -142,8 +188,8 @@ int TCPServer::makeSocket()
         throw socketInitException(errno);
         return -1;
     }
-    #ifdef ERR_MSG
-    fprintf(stderr, "[OK] Socket %d created\n", newSocket);
+    #ifdef INFO_MSG
+    fprintf(stderr, "[INFO] Socket %d created\n", newSocket);
     #endif
     setsockopt(newSocket, SOL_SOCKET, SO_REUSEADDR, &optVal, sizeof(int));
     serverSockets.insert(pair<int, sockaddr_in>(
@@ -160,8 +206,8 @@ void TCPServer::bindSocket(int socket)
         throw bindException(socket, server, errno);
         return;
     }
-    #ifdef ERR_MSG
-    fprintf(stderr, "[OK] Bound socket %d to server\n", socket);
+    #ifdef INFO_MSG
+    fprintf(stderr, "[INFO] Bound socket %d to server %s:%d\n", socket, this->ip_address, this->port);
     #endif
 }
 
@@ -174,62 +220,62 @@ void TCPServer::listenOnSocket(int socket, int n)
         throw listenException(socket, errno);
         return;
     }
-    #ifdef ERR_MSG
-    fprintf(stderr, "[OK] Server socket %d is listening...\n", socket);
+    #ifdef INFO_MSG
+    fprintf(stderr, "[INFO] Server socket %d is listening...\n", socket);
     #endif
 }
 
 
 
-int TCPServer::acceptClient(int socket, sockaddr * clientAddr, socklen_t * socketLength)
+int TCPServer::acceptClient(int socket, sockaddr * client_addr, socklen_t * socket_length)
 {
-    int clientSocket;
-    clientSocket = accept(socket, clientAddr, socketLength);
-    if(clientSocket == -1)
+    int client_socket;
+    client_socket = accept(socket, client_addr, socket_length);
+    if(client_socket == -1)
     {
-        throw acceptException(clientSocket, socket, errno);
-        return clientSocket;
+        throw acceptException(client_socket, socket, errno);
+        return client_socket;
     }
 
     clientSockets.insert(pair<int, sockaddr_in>(
-        clientSocket, *((struct sockaddr_in *) clientAddr)));
-    #ifdef ERR_MSG
-    char address[256];
-    inet_ntop(AF_INET, &(((struct sockaddr_in *)clientAddr)->sin_addr), address, *socketLength);
-    fprintf(stderr, "[OK] Accepted connection from client socket %d on socket %d\n", clientSocket, socket);
-    fprintf(stderr, "[INFO] Address of client socket %d: %s\n", clientSocket, address);
+        client_socket, *((struct sockaddr_in *) client_addr)));
+    #ifdef INFO_MSG
+    char address[15];
+    inet_ntop(AF_INET, &(((struct sockaddr_in *)client_addr)->sin_addr), address, *socket_length);
+    fprintf(stderr, "[INFO] Accepted connection from client socket %d on socket %d\n", client_socket, socket);
+    fprintf(stderr, "[INFO] Address of client socket %d: %s\n", client_socket, address);
     #endif
-    return clientSocket;
+    return client_socket;
 }
 
 
 
-ssize_t TCPServer::sendData(void * buffer, int size, int clientSocket)
+ssize_t TCPServer::sendData(void * buffer, size_t size, int client_socket)
 {
-    ssize_t sentBytes = send(clientSocket, buffer, size, 0);
+    ssize_t sentBytes = send(client_socket, buffer, size, 0);
     if(sentBytes == -1)
     {
-        throw sendException(clientSocket, errno);
+        throw sendException(client_socket, errno);
         return 0;
     }
-    #ifdef ERR_MSG
-    fprintf(stderr, "[OK] Sent data to socket %d\n", clientSocket);
+    #ifdef INFO_MSG
+    fprintf(stderr, "[INFO] Sent %ld bytes of buffer to socket %d\n", sentBytes, client_socket);
     #endif
     return sentBytes;
 }
 
 
 
-ssize_t TCPServer::receiveData(void * data, size_t size, int clientSocket)
+ssize_t TCPServer::receiveData(void * buffer, size_t size, int client_socket)
 {
-    ssize_t receivedBytes = recv(clientSocket, data, size, 0);
+    ssize_t receivedBytes = recv(client_socket, buffer, size, 0);
     if(receivedBytes == -1)
     {
-        throw receiveException(clientSocket, errno);
+        throw receiveException(client_socket, errno);
         return 0;
     }
-    #ifdef ERR_MSG
-    fprintf(stderr, "[OK] Received data from socket %d\n", clientSocket);
+    #ifdef INFO_MSG
+    fprintf(stderr, "[INFO] Received %ld bytes of buffer from socket %d\n", receivedBytes, client_socket);
     #endif
     return receivedBytes;
 }
@@ -241,9 +287,6 @@ void TCPServer::closeSocket(int socket)
     if(close(socket) == -1)
     {
         throw closeException(socket, errno);
-        #ifdef ERR_MSG
-        fprintf(stderr, "[FAIL] Socket %d failed to close: %s\n", socket, strerror(errno));
-        #endif
         return;
     }
     if(isServerSocket(socket))
@@ -254,8 +297,8 @@ void TCPServer::closeSocket(int socket)
     {
         clientSockets.erase(socket);
     }
-    #ifdef ERR_MSG
-    fprintf(stderr, "[OK] Socket %d closed\n", socket);
+    #ifdef INFO_MSG
+    fprintf(stderr, "[INFO] Socket %d closed\n", socket);
     #endif
 }
 
@@ -263,11 +306,16 @@ void TCPServer::closeSocket(int socket)
 
 void TCPServer::setServer(char * address, short port) noexcept
 {
-    memset(&server, 0, sizeof(server));
-    server.sin_family = AF_INET;
-    server.sin_port = htons(port);
-    server.sin_addr.s_addr = inet_addr(address);
-    fprintf(stderr, "[OK] TCP Server initialized on %s:%d\n", address, port);
+    this->ip_address = address;
+    this->port = port;
+
+    memset(&this->server, 0, sizeof(this->server));
+    this->server.sin_family = AF_INET;
+    this->server.sin_port = htons(port);
+    this->server.sin_addr.s_addr = inet_addr(address);
+    #ifdef INFO_MSG
+    fprintf(stderr, "[INFO] TCP Server initialized on %s:%d\n", address, port);
+    #endif
 }
 
 bool TCPServer::isClientSocket(int socket) noexcept
@@ -288,7 +336,7 @@ bool TCPServer::isServerSocket(int socket) noexcept
     return true;
 }
 
-size_t TCPServer::getNumSockets() noexcept { return clientSockets.size() + serverSockets.size(); }
+size_t TCPServer::getNumSockets() noexcept { return this->clientSockets.size() + this->serverSockets.size(); }
 
 map<int, sockaddr_in> TCPServer::getClientSockets() noexcept { return this->clientSockets; }
 

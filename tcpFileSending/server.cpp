@@ -36,11 +36,23 @@ int main(int argc, char **argv)
     tcpServer = new TCPServer(argv[1], atoi(argv[2]));
     char * filename = argv[3];
     int serverSocket, clientSocket;
-    socklen_t socketLength = sizeof(struct sockaddr_in);
-    time_t start, end;
+    socklen_t socketLength;
+    clock_t start, end;
     sockaddr_in clientAddr;
     ssize_t len, sentBytes = 0, totalSentBytes = 0;
     off_t offset = 0;
+
+
+
+    /* Open file */
+    file = open(filename, O_RDONLY);
+    if (file == -1)
+    {
+        perror("File failed to open for writing");
+        exit(EXIT_FAILURE);
+    }
+
+
 
     /* Create server socket, bind, listen and accept client */
     try
@@ -56,16 +68,10 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    /* Open file */
-    file = open(filename, O_RDONLY);
-    if (file == -1)
-    {
-        perror("File failed to open for writing");
-        exit(EXIT_FAILURE);
-    }
 
-    /* Sending file data */
-    time(&start);
+
+    /* Send file data via packets to client */
+    start = clock();
     do
     {
         sentBytes = sendfile(clientSocket, file, &offset, BUFFER_SIZE);
@@ -75,13 +81,12 @@ int main(int argc, char **argv)
             exit(EXIT_FAILURE);
         }
         totalSentBytes += sentBytes;
-        fprintf(stdout, "Sent: %ld bytes", totalSentBytes);
-        fprintf(stdout, "\r");
+        fprintf(stdout, "Sent: %ld bytes\r", totalSentBytes);
     } while(sentBytes != 0);
-    time(&end);
-    
-    fprintf(stdout, "\nDownload time: %.2lf seconds\n", (double) (end - start));
-    
+    end = clock();
+
+    close(file);
+    fprintf(stdout, "\nDownload time: %lf seconds\n", (double) (end - start) / CLOCKS_PER_SEC);
     exitHandler(0);
 
     return 0;

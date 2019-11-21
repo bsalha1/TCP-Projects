@@ -40,8 +40,8 @@ TCPClient::TCPClient(char * address, short port)
     server.sin_family = AF_INET;
     server.sin_port = htons(port);
     inet_pton(AF_INET, address, &server.sin_addr.s_addr);
-    #ifdef ERR_MSG
-    fprintf(stderr, "[OK] TCP Client initialized on %s:%d\n", address, port);
+    #ifdef INFO_MSG
+    fprintf(stderr, "[INFO] TCP Client initialized on %s:%d\n", address, port);
     #endif
 }
 
@@ -61,8 +61,8 @@ void TCPClient::connectToServer(int socket)
         throw connectException(socket, server, errno);
         return;
     }
-    #ifdef ERR_MSG
-    fprintf(stderr, "[OK] Socket %d connected to %s:%d\n", socket, inet_ntoa(server.sin_addr), ntohs(server.sin_port));
+    #ifdef INFO_MSG
+    fprintf(stderr, "[INFO] Socket %d connected to %s:%d\n", socket, inet_ntoa(server.sin_addr), ntohs(server.sin_port));
     #endif
     return;
 }

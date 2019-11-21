@@ -1,12 +1,10 @@
-COMP1 = g++ server.cpp -o server -DERR_MSG -DFORMATTED_ERROR
-COMP2 = g++ client.cpp -o client -DERR_MSG -DFORMATTED_ERROR
+COMP1 = g++ server.cpp -o server -DERR_MSG -DINFO_MSG
+COMP2 = g++ client.cpp -o client -DERR_MSG -DINFO_MSG
 
-main:
+testserver:
 	$(COMP1)
+	./server 128.211.212.44 80 files/Loader.class
+
+testclient:
 	$(COMP2)
-
-testclient: main
-	./client 127.0.0.1 80
-
-testserver: main
-	./server 127.0.0.1 80 bigFile.iso
+	./client 128.211.212.44 80 downloads/Loader.class

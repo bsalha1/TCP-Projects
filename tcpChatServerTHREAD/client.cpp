@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "types.h"
 #include "../tcpLib/tcpClient.h"
 
 void getServerDataThread();
@@ -39,7 +40,6 @@ int main(int argc, char ** argv)
 
     char * address;
     char * port;
-    char * quitMsg = "CLIENT_CONFIRM_QUIT";
     char filename[64];
     char message[max_message];
     sockaddr_in server;
@@ -67,7 +67,8 @@ int main(int argc, char ** argv)
 
     // Continue when server closes
     getServerData->join();
-    tcpClient->sendData(quitMsg, strlen(quitMsg), localSocket);
+    tcpClient->sendData((void *) CLIENT_QUIT, strlen(CLIENT_QUIT), localSocket);
+
     mut.lock();
     tcpClient->closeSocket(localSocket);
     mut.unlock();
@@ -97,10 +98,9 @@ void getInputThread()
     {
         read(STDIN_FILENO, message, sizeof(message)); // Thread pauses until input is read
         message[strcspn(message, "\n")] = 0; // Cut off \n
-        if((strcmp(message, "/quit") == 0) || !isRunning)
-        {
-            break;
-        }
+
+        // Quit command handler
+        if((strcmp(message, "/quit") == 0) || !isRunning) break;
 
         try
         {
@@ -133,6 +133,7 @@ void getServerDataThread()
         try
         {
             sizeData = tcpClient->receiveData(buffer, sizeof(buffer), localSocket); // Pause
+            buffer[sizeData] = '\0';
         }
         catch(exception& e)
         {
@@ -142,10 +143,8 @@ void getServerDataThread()
             break;
         }
         
-        if(strcmp(buffer, "SERVER_CLOSE\n") == 0) // If server sends closing message
-        {
-            break;
-        }
+        // Server close handshake
+        if(strcmp(buffer, SERVER_QUIT) == 0) break;
         fprintf(stdout, "%s\n", buffer);
     }
     return;

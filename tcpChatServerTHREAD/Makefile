@@ -1,42 +1,25 @@
 GPP = g++ -g -pthread
-FLAGS = -DERR_MSG
+FLAGS = -DERR_MSG -DINFO_MSG
 
 IP = 127.0.0.1
 PORT = 4245
 
-main: compclient compserver
-
-# Client vanilla
-compclient:
-	$(GPP) client.cpp -o client
-
-# Client debug
-compclientdb:
-	$(GPP) client.cpp -o client $(FLAGS)
-
-# Server vanilla
-compserver:
-	$(GPP) server.cpp -o server
-
-# Server debug
-compserverdb:
-	$(GPP) server.cpp -o server $(FLAGS)
-
-# Server and Client debug
-compdebug: compserverdb compclientdb
-
 # Standard server test
-testserver: main
+testserver:
+	$(GPP) server.cpp -o server
 	./server $(IP) $(PORT)
 
 # Standard client test
-testclient: main
+testclient:
+	$(GPP) client.cpp -o client
 	./client $(IP) $(PORT)
 
 # Standard server test
-testserverdb: compserverdb
+testserverdb:
+	$(GPP) server.cpp -o server $(FLAGS)
 	./server $(IP) $(PORT)
 
 # Standard client test
-testclientdb: compclientdb
+testclientdb:
+	$(GPP) client.cpp -o client $(FLAGS)
 	./client $(IP) $(PORT)

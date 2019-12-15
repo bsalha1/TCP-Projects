@@ -15,6 +15,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "types.h"
 #include "../tcpLib/tcpServer.h"
 
 using namespace std;
@@ -30,7 +31,7 @@ private:
     mutex mut;
 
     // Client Data
-    map <int, thread*> threads; // First is ID second is thread
+    map<int, thread*> threads; // First is ID second is thread
 
 public:
     /*
@@ -57,17 +58,17 @@ public:
 
     }
 
-
-
     /*
         Deconstructor: joins all threads and closes the master socket
     */
     ~TCPChatServer()
     {
         this->isRunning = false;
-        char * serverDownMessage = "Server is closing";
-        distributeData(serverDownMessage, sizeof(serverDownMessage));
+        distributeData(SERVER_QUIT, sizeof(SERVER_QUIT));
+
         tcpServer->closeSocket(masterSocket); // Close master socket
+
+        // Wait for all threads to finish
         map<int, thread*>::iterator it = threads.begin();
         while(it != threads.end())
         {
@@ -81,7 +82,7 @@ public:
     void runServer();
 
     // Sends all chat and client connection messages to clients
-    void distributeData(void * data, int size);
+    void distributeData(char * data, size_t size);
 
     // The thread created for each socket, first argument is the value of the socket and the second argument is the id
     void socketThread(int socket, int id);
@@ -132,7 +133,7 @@ void TCPChatServer::runServer()
 
 
 
-void TCPChatServer::distributeData(void * data, int size)
+void TCPChatServer::distributeData(char * data, size_t size)
 {
     mut.lock();
     map<int, sockaddr_in>::iterator clientSocket = clientSockets.begin();
@@ -146,7 +147,9 @@ void TCPChatServer::distributeData(void * data, int size)
 }
 
 
-
+/**
+ * Thread for each client 
+ **/
 void TCPChatServer::socketThread(int socket, int id)
 {
     #ifdef ERR_MSG
@@ -175,7 +178,7 @@ void TCPChatServer::socketThread(int socket, int id)
     while(true)
     {
         size = read(socket, message, sizeof(message)); // Thread pauses here
-        if((size == 0) || (size == -1) || !strcmp(message, "CLIENT_CONFIRM_QUIT\n"))  // size = 0 -> client disconnects, size = -1 -> read fail
+        if((size == 0) || (size == -1) || !strcmp(message, CLIENT_QUIT))  // size = 0 -> empty msg, size = -1 -> read fail
         {
             break;
         }
@@ -185,7 +188,7 @@ void TCPChatServer::socketThread(int socket, int id)
         sprintf(formattedMessage, "%s: %s", username, message);
 
         // Send all clients the message
-        distributeData(formattedMessage, sizeof(formattedMessage));
+        distributeData(formattedMessage, strlen(formattedMessage));
         fprintf(stdout, "%s\n", formattedMessage);
     }
 
@@ -228,8 +231,6 @@ int main(int argc, char ** argv)
 
 void exitHandler(int signal)
 {
-    char exitMessage[] = "SERVER_CLOSE\n";
-    tcpChatServer->distributeData(exitMessage, sizeof(exitMessage));
     tcpChatServer->~TCPChatServer();
 }
     

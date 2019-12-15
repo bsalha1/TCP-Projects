@@ -25,7 +25,6 @@ class TCPChatServer : protected TCPServer
 private:
     // Server Data
     int masterSocket;
-    TCPServer * tcpServer;
     bool isRunning = false;
     mutex stdoutMut;
     mutex mut;
@@ -37,19 +36,19 @@ public:
     /*
         Constructor: creates the master socket to which clients will connect to 
     */
-    TCPChatServer(TCPServer * tcpServer)
+    TCPChatServer(char * address, unsigned short port) : TCPServer(address, port)
     {
         try
         {
-            masterSocket = tcpServer->makeSocket();
-            tcpServer->bindSocket(masterSocket);
-            tcpServer->listenOnSocket(masterSocket, 5);
+            masterSocket = makeSocket();
+            bindSocket(masterSocket);
+            listenOnSocket(masterSocket, 5);
         }
         catch(exception& e)
         {
             fprintf(stderr, "%s", e.what());
+            exit(EXIT_FAILURE);
         }
-        this->tcpServer = tcpServer;
         this->isRunning = true;
     }
 
@@ -65,17 +64,7 @@ public:
     {
         this->isRunning = false;
         distributeData(SERVER_QUIT, sizeof(SERVER_QUIT));
-
-        tcpServer->closeSocket(masterSocket); // Close master socket
-
-        // Wait for all threads to finish
-        map<int, thread*>::iterator it = threads.begin();
-        while(it != threads.end())
-        {
-            it->second->join();
-            it++;
-        }
-        delete tcpServer;
+        fprintf(stderr, "[INFO] TCPChatServer closed\n");
     }
 
     // Listens on given server port for messages. Creates new thread for each client and sends each client and the server every message.
@@ -101,27 +90,16 @@ void TCPChatServer::runServer()
         // Put a new socket into the client sockets map
         try
         {   
-            clientSocket = tcpServer->acceptClient(masterSocket, (struct sockaddr *) &clientAddress, &clientSocketLength);
+            clientSocket = acceptClient(masterSocket, (struct sockaddr *) &clientAddress, &clientSocketLength); // Pauses here
         }
         catch(exception& e)
         {
-            #ifdef ERR_MSG
+            if(this->isRunning == false) return;
             fprintf(stdout, "%s", e.what());
-            #endif
-        }
-
-        mut.lock();
-        clientSockets.insert(pair<int, sockaddr_in>(
-            clientSocket, clientAddress));
-        mut.unlock();
-
-        if(clientSocket == -1) // Client socket accept failure
-        {
-            exit(EXIT_FAILURE);
+            continue;
         }
         
         // Start a new thread for the client socket
-
         mut.lock();
         threads.insert(pair<int, thread*>(
             id, new thread(&TCPChatServer::socketThread, this, clientSocket, id)));
@@ -139,7 +117,7 @@ void TCPChatServer::distributeData(char * data, size_t size)
     map<int, sockaddr_in>::iterator clientSocket = clientSockets.begin();
     while(clientSocket != clientSockets.end())
     {
-        tcpServer->sendData(data, size, clientSocket->first);
+        sendData(data, size, clientSocket->first);
         clientSocket++;
     }
     mut.unlock();
@@ -158,7 +136,7 @@ void TCPChatServer::socketThread(int socket, int id)
     
     char username[max_username], message[max_message];
     char formattedMessage[max_message + max_username + 2], quitMessage[max_username + 15], joinMessage[max_username + 12];
-    int size;
+    int sizeRead;
 
     // Create username, quit and join messages
     sprintf(username, "Client-%d", socket);
@@ -177,12 +155,12 @@ void TCPChatServer::socketThread(int socket, int id)
     */
     while(true)
     {
-        size = read(socket, message, sizeof(message)); // Thread pauses here
-        if((size == 0) || (size == -1) || !strcmp(message, CLIENT_QUIT))  // size = 0 -> empty msg, size = -1 -> read fail
+        sizeRead = read(socket, message, sizeof(message)); // Thread pauses here
+        if((sizeRead == 0) || (sizeRead == -1) || !strcmp(message, CLIENT_QUIT))  // size = 0 -> empty msg, size = -1 -> read fail
         {
             break;
         }
-        message[size] = '\0'; // Terminates string (flushes string)
+        message[sizeRead] = '\0'; // Terminates string (flushes string)
 
         // Format the message
         sprintf(formattedMessage, "%s: %s", username, message);
@@ -194,9 +172,7 @@ void TCPChatServer::socketThread(int socket, int id)
 
     // Deregister client
     mut.lock();
-    tcpServer->closeSocket(socket);
-    clientSockets.erase(socket); 
-    threads.erase(id);
+    closeSocket(socket);
     mut.unlock();
     
     // Send out quit message to clients
@@ -205,6 +181,10 @@ void TCPChatServer::socketThread(int socket, int id)
     stdoutMut.lock();
     fprintf(stdout, "%s\n", quitMessage);
     stdoutMut.unlock();
+
+    mut.lock();
+    threads.erase(id);
+    mut.unlock();
     return;
 }
 
@@ -221,8 +201,7 @@ int main(int argc, char ** argv)
     signal(SIGINT, exitHandler);
     char * address = argv[1];
     int port = atoi(argv[2]);
-    TCPServer * tcpServer = new TCPServer(address, port);
-    tcpChatServer = new TCPChatServer(tcpServer);
+    tcpChatServer = new TCPChatServer(address, port);
     
     tcpChatServer->runServer();
 

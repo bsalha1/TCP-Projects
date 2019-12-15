@@ -2,7 +2,7 @@ GPP = g++ -g -pthread
 FLAGS = -DERR_MSG -DINFO_MSG
 
 IP = 127.0.0.1
-PORT = 4245
+PORT = 4533
 
 # Standard server test
 testserver:

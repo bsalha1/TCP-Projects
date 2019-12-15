@@ -37,7 +37,7 @@ public:
      * @param address Address of server to initialize
      * @param port Port of server to host on
      */
-    TCPServer(char * address, short port);
+    TCPServer(char * address, unsigned short port);
 
     /// Empty constructor; does nothing
     TCPServer(){}
@@ -80,6 +80,8 @@ public:
      * @param socket Socket to close
      */
     void closeSocket(int socket);
+
+    void closeAllSockets();
     
 
 
@@ -156,11 +158,15 @@ public:
 
 TCPServer::~TCPServer()
 {
+    closeAllSockets();
+    #ifdef INFO_MSG
+    fprintf(stderr, "[INFO] TCP Server destroyed\n");
+    #endif
 }
 
 
 
-TCPServer::TCPServer(char * address, short port)
+TCPServer::TCPServer(char * address, unsigned short port)
 {
     this->ip_address = address;
     this->port = port;
@@ -289,16 +295,43 @@ void TCPServer::closeSocket(int socket)
         throw closeException(socket, errno);
         return;
     }
+
     if(isServerSocket(socket))
     {
         serverSockets.erase(socket);
     }
-    else
+    else if(isClientSocket(socket))
     {
         clientSockets.erase(socket);
     }
+    
     #ifdef INFO_MSG
     fprintf(stderr, "[INFO] Socket %d closed\n", socket);
+    #endif
+}
+
+
+
+void TCPServer::closeAllSockets()
+{
+    map<int, sockaddr_in>::iterator it = clientSockets.begin();
+    while(it != clientSockets.end())
+    {
+        close(it->first);
+        it++;
+    }
+    #ifdef INFO_MSG
+    fprintf(stderr, "[INFO] All client sockets closed\n");
+    #endif
+
+    it = serverSockets.begin();
+    while(it != serverSockets.end())
+    {
+        close(it->first);
+        it++;
+    }
+    #ifdef INFO_MSG
+    fprintf(stderr, "[INFO] All server sockets closed\n");
     #endif
 }
 

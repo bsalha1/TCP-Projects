@@ -27,9 +27,7 @@ class sendException : public std::exception
     public:
         sendException(const int socket, const int err_num) : _socket(socket) 
         {
-            #ifdef ERR_MSG
-            sprintf(error_msg, "[FAIL] Failed to send data to socket %d: %s\n", _socket, strerror(err_num));
-            #endif
+            sprintf(error_msg, "Failed to send data to socket %d: %s\n", _socket, strerror(err_num));
         }
 
         const char * what () const throw (){ return error_msg; }
@@ -54,9 +52,7 @@ class acceptException : public std::exception
     public:
         acceptException(const int accepted_socket, const int acceptor_socket, const int err_num) : _accepted_socket(accepted_socket), _acceptor_socket(acceptor_socket)
         {
-            #ifdef ERR_MSG
-            sprintf(error_msg, "[FAIL] Failed to accept socket %d on acceptor socket %d: %s\n", accepted_socket, acceptor_socket, strerror(err_num));
-            #endif
+            sprintf(error_msg, "Failed to accept socket %d on acceptor socket %d: %s\n", accepted_socket, acceptor_socket, strerror(err_num));
         }
 
         const char * what () const throw (){ return error_msg; }
@@ -80,9 +76,7 @@ class listenException : public std::exception
     public:
         listenException(const int socket, const int err_num) : _socket(socket)
         {
-            #ifdef ERR_MSG
-            sprintf(error_msg, "[FAIL] Failed to listen on socket %d: %s\n", socket, strerror(err_num));
-            #endif
+            sprintf(error_msg, "Failed to listen on socket %d: %s\n", socket, strerror(err_num));
         }
         
         const char * what () const throw (){ return error_msg; }
@@ -105,9 +99,7 @@ class closeException : public std::exception
     public:
         closeException(const int socket, const int err_num) : _socket(socket)
         {
-            #ifdef ERR_MSG
-            sprintf(error_msg, "[FAIL] Failed to listen on socket %d: %s\n", socket), strerror(err_num);
-            #endif
+            sprintf(error_msg, "Failed to listen on socket %d: %s\n", socket), strerror(err_num);
         }
 };
 
@@ -129,9 +121,7 @@ class bindException : public std::exception
     public:
         bindException(const int socket, const sockaddr_in server, const int err_num) : _socket(socket), _server(server)
         {
-            #ifdef ERR_MSG
-            sprintf(error_msg, "[FAIL] Failed to bind socket %d to server %s:%d: %s\n", socket, inet_ntoa(server.sin_addr), ntohs(server.sin_port), strerror(err_num));
-            #endif
+            sprintf(error_msg, "Failed to bind socket %d to server %s:%d: %s\n", socket, inet_ntoa(server.sin_addr), ntohs(server.sin_port), strerror(err_num));
         }
 
         const char * what () const throw (){ return error_msg; }
@@ -153,9 +143,7 @@ class socketInitException : public std::exception
     public:
         socketInitException(const int err_num)
         {
-            #ifdef ERR_MSG
-            sprintf(error_msg, "[FAIL] Failed to initialize socket: %s\n", strerror(err_num));
-            #endif
+            sprintf(error_msg, "Failed to initialize socket: %s\n", strerror(err_num));
         }
 
         const char * what() throw(){ return error_msg; }
@@ -176,9 +164,7 @@ class receiveException : public std::exception
     public:
         receiveException(const int socket, const int err_num) : _socket(socket)
         {
-            #ifdef ERR_MSG
-            sprintf(error_msg, "[FAIL] Failed to receive data from socket %d: %s\n", socket, strerror(err_num));
-            #endif
+            sprintf(error_msg, "Failed to receive data from socket %d: %s\n", socket, strerror(err_num));
         }
 
         const char * what() throw(){ return error_msg; }
@@ -204,9 +190,7 @@ class connectException : public std::exception
     public:
         connectException(const int socket, const sockaddr_in server, const int err_num) : _socket(socket), _server(server)
         {
-            #ifdef ERR_MSG
-            sprintf(error_msg, "[FAIL] Failed to connect socket %d to server %s:%d: %s\n", socket, inet_ntoa(server.sin_addr), ntohs(server.sin_port), strerror(err_num));
-            #endif
+            sprintf(error_msg, "Failed to connect socket %d to server %s:%d: %s\n", socket, inet_ntoa(server.sin_addr), ntohs(server.sin_port), strerror(err_num));
         }
 
         const char * what() throw(){ return error_msg; }

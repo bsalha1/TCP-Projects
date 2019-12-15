@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "thread": "cpp",
+        "iterator": "cpp"
+    }
+}

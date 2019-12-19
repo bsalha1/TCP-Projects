@@ -1,0 +1,3 @@
+C:\Users\pengy\source\repos\Sockets\obj\Debug\netcoreapp3.1\Sockets.csprojAssemblyReference.cache
+C:\Users\pengy\source\repos\Sockets\obj\Debug\netcoreapp3.1\Sockets.AssemblyInfoInputs.cache
+C:\Users\pengy\source\repos\Sockets\obj\Debug\netcoreapp3.1\Sockets.AssemblyInfo.cs

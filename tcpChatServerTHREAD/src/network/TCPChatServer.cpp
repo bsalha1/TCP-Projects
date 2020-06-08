@@ -1,90 +1,35 @@
-#pragma once
-
-#include <iostream>
-#include <thread>
-#include <list>
-#include <map>
-#include <iterator>
-#include <mutex>
-
-#include <string.h>
-#include <signal.h>
-
-#include <sys/select.h>
-#include <sys/socket.h>
-
-#include <unistd.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
-#include "types.h"
-#include "Util.h"
-
-#include "event/Event.h"
-#include "event/EventPing.h"
-
-#include "lib/TCPServer.h"
+#include "max.h"
+#include "TCPChatServer.h"
 
 using namespace std;
 
-class TCPChatServer : public TCPServer
+TCPChatServer::TCPChatServer(char * address, unsigned short port) : TCPServer(address, port)
 {
-private:
-    // Server Data
-    int masterSocket;
-    bool isRunning = false;
-    mutex stdoutMut;
-    mutex mut;
-
-    // Client Data
-    map<int, thread*> threads; // First is ID second is thread
-
-public:
-    /*
-        Constructor: creates the master socket to which clients will connect to 
-    */
-    TCPChatServer(char * address, unsigned short port) : TCPServer(address, port)
+    try
     {
-        try
-        {
-            masterSocket = makeSocket();
-            bindSocket(masterSocket);
-            listenOnSocket(masterSocket, 5);
-        }
-        catch(exception& e)
-        {
-            fprintf(stderr, "%s", e.what());
-            exit(EXIT_FAILURE);
-        }
-        this->isRunning = true;
+        masterSocket = makeSocket();
+        bindSocket(masterSocket);
+        listenOnSocket(masterSocket, 5);
     }
-
-    TCPChatServer()
+    catch(exception& e)
     {
-
+        fprintf(stderr, "%s", e.what());
+        exit(EXIT_FAILURE);
     }
+    this->isRunning = true;
+}
 
-    /*
-        Deconstructor: joins all threads and closes the master socket
-    */
-    ~TCPChatServer()
-    {
-        this->isRunning = false;
-        distributeData(SERVER_QUIT, sizeof(SERVER_QUIT));
-        fprintf(stderr, "[INFO] TCPChatServer closed\n");
-    }
+TCPChatServer::TCPChatServer()
+{
 
-    // Listens on given server port for messages. Creates new thread for each client and sends each client and the server every message.
-    void runServer();
+}
 
-    // Sends all chat and client connection messages to clients
-    void distributeData(char * data, size_t size);
-
-    // The thread created for each socket, first argument is the value of the socket and the second argument is the id
-    void socketThread(int socket, int id);
-
-    map<int, thread*> getThreads() noexcept { return this->threads; }
-};
+TCPChatServer::~TCPChatServer()
+{
+    this->isRunning = false;
+    // distributeData(SERVER_QUIT, sizeof(SERVER_QUIT));
+    fprintf(stderr, "[INFO] TCPChatServer closed\n");
+}
 
 void TCPChatServer::runServer()
 {
@@ -142,8 +87,8 @@ void TCPChatServer::socketThread(int socket, int id)
     #endif
     
     char username[max_username], message[max_message];
-    char formattedMessage[max_message + max_username + 2], quitMessage[max_username + 15], joinMessage[max_username + 12];
-    int sizeRead;
+    char formattedMessage[max_message + max_username + 2], quitMessage[max_username + 17], joinMessage[max_username + 14];
+    ssize_t sizeRead;
 
     // Create username, quit and join messages
     sprintf(username, "Client-%d", socket);
@@ -163,7 +108,7 @@ void TCPChatServer::socketThread(int socket, int id)
     while(true)
     {
         sizeRead = read(socket, message, sizeof(message)); // Thread pauses here
-        if((sizeRead == 0) || (sizeRead == -1) || !strcmp(message, CLIENT_QUIT))  // size = 0 -> empty msg, size = -1 -> read fail
+        if((sizeRead == 0) || (sizeRead == -1))  // size = 0 -> empty msg, size = -1 -> read fail
         {
             break;
         }
@@ -211,4 +156,9 @@ void TCPChatServer::socketThread(int socket, int id)
     threads.erase(id);
     mut.unlock();
     return;
+}
+
+map<int, thread*> TCPChatServer::getThreads()
+{
+    return this->threads;
 }

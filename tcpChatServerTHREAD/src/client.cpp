@@ -15,7 +15,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "TCPChatClient.h"
+#include "network/TCPChatClient.h"
+#include "command/CommandPing.h"
 
 void exitHandler(int signal);
 int main(int argc, char ** argv)
@@ -28,9 +29,11 @@ int main(int argc, char ** argv)
     signal(SIGINT, exitHandler);
 
     char * address = argv[1];
-    int port = atoi(argv[2]);
+    short port = (short) atoi(argv[2]);
 
     TCPChatClient* client = new TCPChatClient(address, port);
+    client->registerCommand(new CommandPing(client, client->getLocalSocket()));
+    client->wait();
 
     exit(EXIT_SUCCESS);
 }

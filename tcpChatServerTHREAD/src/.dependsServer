@@ -1,0 +1,48 @@
+server.o: server.cpp network/TCPChatServer.h network/../util/Util.h \
+ network/../event/Event.h network/../event/../../lib/TCPServer.h \
+ network/../event/EventPing.h
+TCPChatServer.o: network/TCPChatServer.cpp network/max.h \
+ network/TCPChatServer.h network/../util/Util.h network/../event/Event.h \
+ network/../event/../../lib/TCPServer.h network/../event/EventPing.h
+TCPChatClient.o: network/TCPChatClient.cpp network/TCPChatClient.h \
+ network/../../lib/TCPClient.h network/../../lib/TCPServer.h \
+ network/../event/EventListener.h network/../event/EventPing.h \
+ network/../event/Event.h network/../event/EventListenerHandler.h \
+ network/../command/CommandAbstract.h network/../command/CommandHandler.h \
+ network/max.h network/../event/PingListener.h \
+ network/../command/CommandHelp.h network/../command/CommandQuit.h
+Request.o: request/Request.cpp request/Request.h \
+ request/../../lib/TCPClient.h request/../../lib/TCPServer.h \
+ request/../util/Util.h
+RequestPing.o: request/RequestPing.cpp request/RequestPing.h \
+ request/Request.h request/../../lib/TCPClient.h \
+ request/../../lib/TCPServer.h
+PingListener.o: event/PingListener.cpp event/PingListener.h \
+ event/EventPing.h event/Event.h event/../../lib/TCPServer.h \
+ event/EventListener.h
+EventListenerHandler.o: event/EventListenerHandler.cpp \
+ event/EventListenerHandler.h event/EventListener.h event/EventPing.h \
+ event/Event.h event/../../lib/TCPServer.h
+Event.o: event/Event.cpp event/Event.h event/../../lib/TCPServer.h
+EventPing.o: event/EventPing.cpp event/EventPing.h event/Event.h \
+ event/../../lib/TCPServer.h
+CommandQuit.o: command/CommandQuit.cpp command/CommandQuit.h \
+ command/CommandAbstract.h
+CommandHandler.o: command/CommandHandler.cpp command/CommandHandler.h \
+ command/CommandAbstract.h command/../util/Util.h
+CommandAbstract.o: command/CommandAbstract.cpp command/CommandAbstract.h
+CommandHelp.o: command/CommandHelp.cpp command/CommandHelp.h \
+ command/CommandHandler.h command/CommandAbstract.h
+CommandPing.o: command/CommandPing.cpp command/../request/RequestPing.h \
+ command/../request/Request.h command/../request/../../lib/TCPClient.h \
+ command/../request/../../lib/TCPServer.h command/../event/PingListener.h \
+ command/../event/EventPing.h command/../event/Event.h \
+ command/../event/EventListener.h command/CommandPing.h \
+ command/CommandAbstract.h command/../network/TCPChatClient.h \
+ command/../network/../event/EventListenerHandler.h \
+ command/../network/../command/CommandHandler.h
+TCPServer.o: ../lib/TCPServer.cpp ../lib/TCPServer.h \
+ ../lib/TCPException.h
+TCPException.o: ../lib/TCPException.cpp ../lib/TCPException.h
+TCPClient.o: ../lib/TCPClient.cpp ../lib/TCPClient.h ../lib/TCPServer.h \
+ ../lib/TCPException.h

@@ -8,7 +8,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "TCPChatServer.h"
+#include "network/TCPChatServer.h"
 
 void exitHandler(int signal);
 TCPChatServer * tcpChatServer;
@@ -22,7 +22,7 @@ int main(int argc, char ** argv)
     }
     signal(SIGINT, exitHandler);
     char * address = argv[1];
-    int port = atoi(argv[2]);
+    short port = (short) atoi(argv[2]);
     tcpChatServer = new TCPChatServer(address, port);
     
     tcpChatServer->runServer();

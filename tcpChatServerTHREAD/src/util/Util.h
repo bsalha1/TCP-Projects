@@ -6,8 +6,6 @@
 #include <string>
 #include <cstring>
 
-#include "lib/TCPClient.h"
-
 using namespace std;
 
 class Util

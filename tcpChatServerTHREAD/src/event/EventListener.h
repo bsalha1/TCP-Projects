@@ -4,13 +4,11 @@
 #include <string>
 
 #include "EventPing.h"
-#include "Event.h"
+
+using namespace std;
 
 class EventListener
 {
     public:
-        virtual void onEventPing(EventPing* event)
-        {
-
-        }
+        virtual void onEventPing(EventPing* event) = 0;
 };
